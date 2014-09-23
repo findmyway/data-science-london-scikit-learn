@@ -1,10 +1,12 @@
 """
 
 """
+from pprint import pprint
+
 from sklearn.svm import SVC
 import numpy as np
+from sklearn.grid_search import GridSearchCV
 from sklearn.preprocessing import scale
-from sklearn.cross_validation import cross_val_score
 
 from data.data import trainX, trainY, testX
 
@@ -16,25 +18,20 @@ def naive_svm():
     """
     preprocess(trainX)
 
-    # find the best params
-    test_results = {}
-    x = [10 ** i for i in range(-3, 4, 1)]
-    y = [10 ** i for i in range(-3, 4, 1)]
-    xx, yy = np.meshgrid(x, y)
-    for c, gamma in zip(xx.flatten(), yy.flatten()):
-        clf = SVC(C=c, kernel='rbf', gamma=gamma)
-        scores = cross_val_score(clf, trainX, trainY, cv=5)
-        test_results[(c, gamma)] = scores
-        print("mean:{0},\tc = {1},\tgamma={2}".format(scores.mean(), c, gamma))
-    print(test_results)
-    best_score, (bestc, bestgamma) = sorted((scores.mean(), params)
-                                            for params, scores in test_results.items())[-1]
-    print("best score is :", best_score)  # 0.922
-    print("params : c = {}, gamma = {}".format(bestc, bestgamma))  # (c=3, gamma=0.018)
-
-    clf = SVC(C=bestc, kernel='rbf', gamma=bestgamma)
+    # grid search
+    params = {'kernel': ['rbf'],
+              'C': [0.5, 1, 2, 3, 4, 5],
+              'gamma': np.arange(0.01, 0.02, 0.001)}
+    svc = SVC()
+    clf = GridSearchCV(svc, params, cv=5, n_jobs=-1)
     clf.fit(trainX, trainY)
-    y = clf.predict(testX)
+    pprint(clf.grid_scores_)
+    print(clf.best_params_, clf.best_score_)
+
+    # create result
+    best_clf = clf.best_estimator_
+    best_clf.fit(trainX, trainY)
+    y = best_clf.predict(testX)
     return y
 
 
